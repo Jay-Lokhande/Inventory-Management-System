@@ -5,6 +5,7 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 # from models import Customer  # Import the Customer model from your models module
 from customer_forms import CustomerForm  # Import the CustomerForm class
+from flask_bcrypt import Bcrypt
 
 
 app = Flask(__name__)
@@ -12,6 +13,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///project.db'  # SQLite databas
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)  # Initialize Flask-Bcrypt
 
 # Define your database models
 class Customer(db.Model):
@@ -62,7 +64,7 @@ class Users(db.Model):
     first_name = db.Column(db.String(255))
     last_name = db.Column(db.String(255))
     user_name = db.Column(db.String(255))
-    password = db.Column(db.String(255))
+    password = db.Column(db.String(60), nullable=False)  # Store hashed passwords
     type_id = db.Column(db.Integer, db.ForeignKey('type.id'))
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
     phone_number = db.Column(db.String(20))
@@ -86,7 +88,7 @@ class Manager(db.Model):
     phone_number = db.Column(db.String(20))
 
 # Commit the models to the database
-db.create_all()
+# db.create_all()
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -137,12 +139,35 @@ def add_customer():
 #         return redirect(url_for('list_customers'))
 #
 #     return render_template('edit_customer.html', customer=customer)
+@app.route('/customers/edit/<int:id>', methods=['GET', 'POST'])
+def edit_customer(id):
+    customer = Customer.query.get(id)
+    form = CustomerForm(obj=customer)
+
+    if form.validate_on_submit():
+        form.populate_obj(customer)
+        db.session.commit()
+        return redirect(url_for('list_customers'))
+
+    return render_template('edit_customer.html', form=form, customer=customer)
 @app.route('/customers/delete/<int:id>')
 def delete_customer(id):
     customer = Customer.query.get(id)
     db.session.delete(customer)
     db.session.commit()
     return redirect(url_for('list_customers'))
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegistrationForm()
 
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+        user = Users(username=form.username.data, password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+        flash('Your account has been created!', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('register.html', title='Register', form=form
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
