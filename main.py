@@ -4,8 +4,10 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
-from models import Customer, Users  # Import your database models
+# from models import Customer, Users, Employee  # Import your database models
 from customer_forms import CustomerForm, SearchForm  # Import the SearchForm
+from product_forms import ProductForm  # Import the SearchForm
+from employee_forms import EmployeeForm  # Import the EmployeeForm class
 from flask_bcrypt import Bcrypt
 from flask import flash
 from wtforms import Form, StringField
@@ -22,6 +24,80 @@ login_manager = LoginManager(app)
 class User(UserMixin):
     def __init__(self, user_id):
         self.id = user_id
+# Define your database models
+class Customer(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    first_name = db.Column(db.String(255))
+    last_name = db.Column(db.String(255))
+    phone_number = db.Column(db.String(20))
+    employee_id = db.Column(db.Integer, db.ForeignKey('employee.id'))
+
+class Employee(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    first_name = db.Column(db.String(255))
+    last_name = db.Column(db.String(255))
+    email = db.Column(db.String(255))
+    phone_number = db.Column(db.String(20))
+    job_id = db.Column(db.Integer, db.ForeignKey('job.id'))
+    hired_date = db.Column(db.Date)
+    location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
+    manager_id = db.Column(db.Integer, db.ForeignKey('manager.id'))
+
+class Job(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    job_title = db.Column(db.String(255))
+    salary = db.Column(db.Numeric(10, 2))
+
+class Location(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    province = db.Column(db.String(255))
+    city = db.Column(db.String(255))
+    street = db.Column(db.String(255))
+
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(255))
+    description = db.Column(db.Text)
+    manager_id = db.Column(db.Integer, db.ForeignKey('employee.id'))
+
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(255))
+    description = db.Column(db.Text)
+    qty_stock = db.Column(db.Integer)
+    price = db.Column(db.Numeric(10, 2))
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+
+class Users(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    first_name = db.Column(db.String(255))
+    last_name = db.Column(db.String(255))
+    user_name = db.Column(db.String(255))
+    password = db.Column(db.String(60), nullable=False)  # Store hashed passwords
+    type_id = db.Column(db.Integer, db.ForeignKey('type.id'))
+    location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
+    phone_number = db.Column(db.String(20))
+
+class Type(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    type = db.Column(db.String(255))
+
+class Supplier(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    company_name = db.Column(db.String(255))
+    location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
+    phone_number = db.Column(db.String(20))
+
+class Manager(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    first_name = db.Column(db.String(255))
+    last_name = db.Column(db.String(255))
+    location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
+    email = db.Column(db.String(255))
+    phone_number = db.Column(db.String(20))
+
+# Commit the models to the database
+# db.create_all()
 @login_manager.user_loader
 def load_user(user_id):
     return Users.query.get(int(user_id))
@@ -151,6 +227,78 @@ def delete_customer(id):
 def list_employees():
     employees = Employee.query.all()
     return render_template('employees.html', employees=employees)
+@app.route('/employees/add', methods=['GET', 'POST'])
+def add_employee():
+    form = EmployeeForm()
+
+    if form.validate_on_submit():
+        first_name = form.first_name.data
+        last_name = form.last_name.data
+        email = form.email.data
+        phone_number = form.phone_number.data
+
+        employee = Employee(first_name=first_name, last_name=last_name, email=email, phone_number=phone_number)
+        db.session.add(employee)
+        db.session.commit()
+        return redirect(url_for('list_employees'))
+
+    return render_template('add_employee.html', form=form)
+
+@app.route('/employees/edit/<int:id>', methods=['GET', 'POST'])
+def edit_employee(id):
+    employee = Employee.query.get(id)
+    form = EmployeeForm(obj=employee)
+
+    if form.validate_on_submit():
+        form.populate_obj(employee)
+        db.session.commit()
+        return redirect(url_for('list_employees'))
+
+    return render_template('edit_employee.html', form=form, employee=employee)
+@app.route('/employees/delete/<int:id>')
+def delete_employee(id):
+    employee = Employee.query.get(id)
+    db.session.delete(employee)
+    db.session.commit()
+    return redirect(url_for('list_employees'))
+@app.route('/products')
+def list_products():
+    products = Product.query.all()
+    return render_template('products.html', products=products)
+@app.route('/products/add', methods=['GET', 'POST'])
+def add_product():
+    form = ProductForm()
+
+    if form.validate_on_submit():
+        name = form.name.data
+        description = form.description.data
+        qty_stock = form.qty_stock.data
+        price = form.price.data
+
+        product = Product(name=name, description=description, qty_stock=qty_stock, price=price)
+        db.session.add(product)
+        db.session.commit()
+        return redirect(url_for('list_products'))
+
+    return render_template('add_product.html', form=form)
+
+@app.route('/products/edit/<int:id>', methods=['GET', 'POST'])
+def edit_product(id):
+    product = Product.query.get(id)
+    form = ProductForm(obj=product)
+
+    if form.validate_on_submit():
+        form.populate_obj(product)
+        db.session.commit()
+        return redirect(url_for('list_products'))
+
+    return render_template('edit_product.html', form=form, product=product)
+@app.route('/products/delete/<int:id>')
+def delete_product(id):
+    product = Product.query.get(id)
+    db.session.delete(product)
+    db.session.commit()
+    return redirect(url_for('list_products'))
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
