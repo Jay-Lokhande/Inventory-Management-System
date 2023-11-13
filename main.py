@@ -53,6 +53,8 @@ class Product(db.Model):
     productDiscription = db.Column(db.String(255))
     productPrice = db.Column(db.Integer)
     productCategory = db.Column(db.String(100))
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=False)
+    supplier = relationship("Supplier", back_populates="product")
 
 
 class Order(db.Model):
@@ -65,11 +67,13 @@ class Order(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     orderedUser = relationship("Users", back_populates="order")
 
+
 class Supplier(db.Model):
     __tablename__ = "supplier"
     id = db.Column(db.Integer, primary_key=True)
     company_name = db.Column(db.String(250), nullable=False)
     phone_number = db.Column(db.Integer)
+    product = relationship("Product", back_populates="supplier")
 
 
 db.create_all()
@@ -179,6 +183,18 @@ def addEmployee():
         db.session.add(upload)
         db.session.commit()
     return render_template('addEmployee.html', jobs=jobs)
+
+
+@app.route('/add-supplier', methods=['GET', 'POST'])
+def addSupplier():
+    if request.method == 'POST':
+        upload = Supplier(
+            company_name=request.form.get('company_name'),
+            phone_number=request.form.get('phone_num')
+        )
+        db.session.add(upload)
+        db.session.commit()
+    return render_template('addSupplier.html')
 
 
 if __name__ == '__main__':
