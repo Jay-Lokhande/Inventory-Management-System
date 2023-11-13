@@ -53,8 +53,8 @@ class Product(db.Model):
     productDiscription = db.Column(db.String(255))
     productPrice = db.Column(db.Integer)
     # productCategory = db.Column(db.String(100))
-    category_id = db.Coulumn(db.Intger, db.ForeignKey('category.id'))
-    category = relationship("Category", back_populates="category")
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    category = relationship("Category", back_populates="product")
 
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=False)
     supplier = relationship("Supplier", back_populates="product")
@@ -64,8 +64,8 @@ class Category(db.Model):
     __tablename__ = "category"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
-    discription = db.Column(db.String(255))
-    product = relationship("Product", back_populates="supplier")
+    description = db.Column(db.String(255))
+    product = relationship("Product", back_populates="category")
 
 
 class Order(db.Model):
@@ -216,6 +216,18 @@ def addSupplier():
         db.session.add(upload)
         db.session.commit()
     return render_template('addSupplier.html')
+
+
+@app.route('/add-category', methods=['GET', 'POST'])
+def addCategory():
+    if request.method == 'POST':
+        upload = Category(
+            name=request.form.get('name'),
+            description=request.form.get('description')
+        )
+        db.session.add(upload)
+        db.session.commit()
+    return render_template('addCategory.html')
 
 
 if __name__ == '__main__':
