@@ -138,7 +138,7 @@ def addProduct():
     suppliers = Supplier.query.all()
 
     if request.method == 'POST':
-        filter_ = request.form.getlist('')
+        filter_ = request.form.getlist('comp_name')
         supplier = Supplier.query.filter(Supplier.company_name == filter_[0]).first()
         file = request.files['file']
         upload = Product(
