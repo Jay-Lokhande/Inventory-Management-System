@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+<form action="{{ url_for('addProduct') }}" method="post" enctype="multipart/form-data">
+          <label for="category">Choose a Meal Type:</label>
+  <select name="category" id="category">
+                    <option value="all">Select Meal Category</option>
+
+      <option value="electronics">Electronics</option>
+      <option value="groceries">Groceries</option>
+      <option value="books">Books</option>
+    <option value="sports">Sports</option>
+    <option value="tickets">Movie Tickets</option>
+    <option value="furniture">Furniture</option>
+  </select>
+        <input type="text" name="productName" placeholder="Product Name" required="required"/>
+        <input type="text" name="price" placeholder="Price" required="required"/>
+    <input type="text" name="discription" placeholder="discription" required="required"/>
+    <input type="file" name="file" required="required"/>
+        <button type="submit">Done</button>
+    </form>
+</body>
+</html>
