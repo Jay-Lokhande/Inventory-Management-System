@@ -135,19 +135,24 @@ def b64encode_filter(s):
 
 @app.route('/add-products', methods=['GET', 'POST'])
 def addProduct():
+    suppliers = Supplier.query.all()
+
     if request.method == 'POST':
+        filter_ = request.form.getlist('')
+        supplier = Supplier.query.filter(Supplier.company_name == filter_[0]).first()
         file = request.files['file']
         upload = Product(
             productName=request.form.get('productName'),
             productImg=file.read(),
             productDiscription=request.form.get('discription'),
             productPrice=request.form.get('price'),
-            productCategory=request.form.get('category')
+            productCategory=request.form.get('category'),
+            supplier_id=supplier.id
         )
         db.session.add(upload)
         db.session.commit()
-        return render_template('addproduct.html')
-    return render_template('addproduct.html')
+        return render_template('addproduct.html', suppliers=suppliers)
+    return render_template('addproduct.html', suppliers=suppliers)
 
 
 @app.route('/add-jobs', methods=['GET', 'POST'])
