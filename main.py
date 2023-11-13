@@ -52,9 +52,20 @@ class Product(db.Model):
     productImg = db.Column(db.LargeBinary)
     productDiscription = db.Column(db.String(255))
     productPrice = db.Column(db.Integer)
-    productCategory = db.Column(db.String(100))
+    # productCategory = db.Column(db.String(100))
+    category_id = db.Coulumn(db.Intger, db.ForeignKey('category.id'))
+    category = relationship("Category", back_populates="category")
+
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=False)
     supplier = relationship("Supplier", back_populates="product")
+
+
+class Category(db.Model):
+    __tablename__ = "category"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    discription = db.Column(db.String(255))
+    product = relationship("Product", back_populates="supplier")
 
 
 class Order(db.Model):
@@ -136,9 +147,13 @@ def b64encode_filter(s):
 @app.route('/add-products', methods=['GET', 'POST'])
 def addProduct():
     suppliers = Supplier.query.all()
+    categories = Category.query.all()
 
     if request.method == 'POST':
         filter_ = request.form.getlist('comp_name')
+        cat_filter = request.form.get('category'),
+        category = Category.query.filter(Category.name == cat_filter[0]).first()
+
         supplier = Supplier.query.filter(Supplier.company_name == filter_[0]).first()
         file = request.files['file']
         upload = Product(
@@ -146,13 +161,14 @@ def addProduct():
             productImg=file.read(),
             productDiscription=request.form.get('discription'),
             productPrice=request.form.get('price'),
-            productCategory=request.form.get('category'),
+            # productCategory=request.form.get('category'),
+            category_id=category.id,
             supplier_id=supplier.id
         )
         db.session.add(upload)
         db.session.commit()
-        return render_template('addproduct.html', suppliers=suppliers)
-    return render_template('addproduct.html', suppliers=suppliers)
+        return render_template('addproduct.html', suppliers=suppliers, categories=categories)
+    return render_template('addproduct.html', suppliers=suppliers, categories=categories)
 
 
 @app.route('/add-jobs', methods=['GET', 'POST'])
