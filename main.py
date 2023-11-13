@@ -1,304 +1,185 @@
-from flask import Flask, render_template, request, redirect, url_for
+# app.py
+import base64
+import datetime
+
+from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
-# from models import Customer, Users, Employee  # Import your database models
-from customer_forms import CustomerForm, SearchForm  # Import the SearchForm
-from product_forms import ProductForm  # Import the SearchForm
-from employee_forms import EmployeeForm  # Import the EmployeeForm class
-from flask_bcrypt import Bcrypt
-from flask import flash
-from wtforms import Form, StringField
+from sqlalchemy import and_
+from sqlalchemy.orm import relationship
 
 app = Flask(__name__)
-app.secret_key = 'dah67uyrtghjerwer3gd32rrg4dwd'  # Replace with your own secret key
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///project.db'  # SQLite database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventory.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
-bcrypt = Bcrypt(app)  # Initialize Flask-Bcrypt
-login_manager = LoginManager(app)
-class User(UserMixin):
-    def __init__(self, user_id):
-        self.id = user_id
-# Define your database models
-class Customer(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    first_name = db.Column(db.String(255))
-    last_name = db.Column(db.String(255))
-    phone_number = db.Column(db.String(20))
-    employee_id = db.Column(db.Integer, db.ForeignKey('employee.id'))
 
-class Employee(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    first_name = db.Column(db.String(255))
-    last_name = db.Column(db.String(255))
-    email = db.Column(db.String(255))
-    phone_number = db.Column(db.String(20))
-    job_id = db.Column(db.Integer, db.ForeignKey('job.id'))
-    hired_date = db.Column(db.Date)
-    location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
-    manager_id = db.Column(db.Integer, db.ForeignKey('manager.id'))
+
+# app.py (continuation)
+class Users(db.Model):
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True)
+    firstName = db.Column(db.String(50), nullable=False)
+    middleName = db.Column(db.String(50), nullable=False)
+    lastName = db.Column(db.String(50), nullable=False)
+    userName = db.Column(db.String(50), nullable=False)
+    password = db.Column(db.String(50), nullable=False)
+    order = relationship("Order", back_populates="orderedUser")
+
+
+class Employees(db.Model):
+    __tablename__ = "employees"
+    id = db.Column(db.Integer, primary_key=True)
+    firstName = db.Column(db.String(50), nullable=False)
+    middleName = db.Column(db.String(50), nullable=False)
+    lastName = db.Column(db.String(50), nullable=False)
+    userName = db.Column(db.String(50), nullable=False)
+    password = db.Column(db.String(50), nullable=False)
+    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
+    job = relationship("Job", back_populates="jobEmployee")
+
 
 class Job(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    job_title = db.Column(db.String(255))
-    salary = db.Column(db.Numeric(10, 2))
+    __tablename__ = "jobs"
+    id = db.Column(db.Integer, primary_key=True)
+    job_title = db.Column(db.String(50), nullable=False)
+    salary = db.Column(db.Integer, nullable=False)
+    jobEmployee = relationship("Employees", back_populates="job")
 
-class Location(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    province = db.Column(db.String(255))
-    city = db.Column(db.String(255))
-    street = db.Column(db.String(255))
-
-class Category(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(255))
-    description = db.Column(db.Text)
-    manager_id = db.Column(db.Integer, db.ForeignKey('employee.id'))
 
 class Product(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(255))
-    description = db.Column(db.Text)
-    qty_stock = db.Column(db.Integer)
-    price = db.Column(db.Numeric(10, 2))
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    __tablename__ = "products"
+    id = db.Column(db.Integer, primary_key=True)
+    productName = db.Column(db.String(100))
+    productImg = db.Column(db.LargeBinary)
+    productDiscription = db.Column(db.String(255))
+    productPrice = db.Column(db.Integer)
+    productCategory = db.Column(db.String(100))
 
-class Users(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    first_name = db.Column(db.String(255))
-    last_name = db.Column(db.String(255))
-    user_name = db.Column(db.String(255))
-    password = db.Column(db.String(60), nullable=False)  # Store hashed passwords
-    type_id = db.Column(db.Integer, db.ForeignKey('type.id'))
-    location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
-    phone_number = db.Column(db.String(20))
 
-class Type(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    type = db.Column(db.String(255))
+class Order(db.Model):
+    __tablename__ = "orders"
+    id = db.Column(db.Integer, primary_key=True)
+    product = db.Column(db.String(250), nullable=False)
+    productQuantity = db.Column(db.String(250), nullable=False)
+    date = db.Column(db.Date, default=datetime.date.today)
+    price = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    orderedUser = relationship("Users", back_populates="order")
 
 class Supplier(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    company_name = db.Column(db.String(255))
-    location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
-    phone_number = db.Column(db.String(20))
+    __tablename__ = "supplier"
+    id = db.Column(db.Integer, primary_key=True)
+    company_name = db.Column(db.String(250), nullable=False)
+    phone_number = db.Column(db.Integer)
 
-class Manager(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    first_name = db.Column(db.String(255))
-    last_name = db.Column(db.String(255))
-    location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
-    email = db.Column(db.String(255))
-    phone_number = db.Column(db.String(20))
 
-# Commit the models to the database
-# db.create_all()
-@login_manager.user_loader
-def load_user(user_id):
-    return Users.query.get(int(user_id))
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('home'))
-
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = Users.query.filter_by(username=username).first()
-
-        if user and user.check_password(password):
-            login_user(user)
-            flash('Login successful!', 'success')
-            return redirect(url_for('home'))
-        else:
-            flash('Login failed. Check your credentials.', 'danger')
-
-    return render_template('login.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('home'))
+db.create_all()
 
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    # users = Users.query.all()
+    # upload = Users(
+    #     firstName="Jay",
+    # middleName="Ashok",
+    # lastName="Lokhande",
+    # userName="jaylokhande",
+    # password="123456789"
+    # )
+    # db.session.add(upload)
+    # db.session.commit()
+    # print(users)
+    # return render_template('index.html', users=users)
+    return render_template('index.html')
 
-# @app.route('/customers')
-# def list_customers():
-#     customers = Customer.query.all()
-#     return render_template('customers.html', customers=customers)
-@app.route('/customers', methods=['GET', 'POST'])
-def list_customers():
-    search_form = SearchForm()
-    customers = []
 
-    if search_form.validate_on_submit():
-        search_term = search_form.search_term.data
-        # Use SQLAlchemy to filter customers based on the search term (first or last name)
-        customers = Customer.query.filter(
-            (Customer.first_name.like(f'%{search_term}%')) | (Customer.last_name.like(f'%{search_term}%'))
-        ).all()
-    else:
-        customers = Customer.query.all()
+@app.route('/home', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        userName = request.form.get('userName')
+        password = request.form.get('password')
+        user = Users.query.filter_by(userName=userName).first()
+        category = request.form.get('category')
+        category_product = Product.query.filter(and_(Product.category == category))
+        return render_template('userInterface.html', user=user, category_product=category_product)
+    return render_template('admin.html')
 
-    return render_template('customers.html', customers=customers, search_form=search_form)
-# @app.route('/customers/add', methods=['GET', 'POST'])
-# def add_customer():
-#     if request.method == 'POST':
-#         first_name = request.form['first_name']
-#         last_name = request.form['last_name']
-#         phone_number = request.form['phone_number']
-#
-#         customer = Customer(first_name=first_name, last_name=last_name, phone_number=phone_number)
-#         db.session.add(customer)
-#         db.session.commit()
-#         return redirect(url_for('list_customers'))
-#
-#     return render_template('add_customer.html')
-@app.route('/customers/add', methods=['GET', 'POST'])
-# @login_required
-def add_customer():
-    form = CustomerForm()
 
-    if form.validate_on_submit():
-        first_name = form.first_name.data
-        last_name = form.last_name.data
-        phone_number = form.phone_number.data
-
-        customer = Customer(first_name=first_name, last_name=last_name, phone_number=phone_number)
-        db.session.add(customer)
-        db.session.commit()
-        return redirect(url_for('list_customers'))
-
-    return render_template('add_customer.html', form=form)
-# @app.route('/customers/edit/<int:id>', methods=['GET', 'POST'])
-# def edit_customer(id):
-#     customer = Customer.query.get(id)
-#
-#     if request.method == 'POST':
-#         customer.first_name = request.form['first_name']
-#         customer.last_name = request.form['last_name']
-#         customer.phone_number = request.form['phone_number']
-#
-#         db.session.commit()
-#         return redirect(url_for('list_customers'))
-#
-#     return render_template('edit_customer.html', customer=customer)
-@app.route('/customers/edit/<int:id>', methods=['GET', 'POST'])
-def edit_customer(id):
-    customer = Customer.query.get(id)
-    form = CustomerForm(obj=customer)
-
-    if form.validate_on_submit():
-        form.populate_obj(customer)
-        db.session.commit()
-        return redirect(url_for('list_customers'))
-
-    return render_template('edit_customer.html', form=form, customer=customer)
-@app.route('/customers/delete/<int:id>')
-def delete_customer(id):
-    customer = Customer.query.get(id)
-    db.session.delete(customer)
-    db.session.commit()
-    return redirect(url_for('list_customers'))
-# @app.route('/register', methods=['GET', 'POST'])
-# def register():
-#     form = RegistrationForm()
-#
-#     if form.validate_on_submit():
-#         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-#         user = Users(username=form.username.data, password=hashed_password)
-#         db.session.add(user)
-#         db.session.commit()
-#         flash('Your account has been created!', 'success')
-#         return redirect(url_for('login'))
-#
-#     return render_template('register.html', title='Register', form=form
-@app.route('/employees')
-def list_employees():
-    employees = Employee.query.all()
-    return render_template('employees.html', employees=employees)
-@app.route('/employees/add', methods=['GET', 'POST'])
-def add_employee():
-    form = EmployeeForm()
-
-    if form.validate_on_submit():
-        first_name = form.first_name.data
-        last_name = form.last_name.data
-        email = form.email.data
-        phone_number = form.phone_number.data
-
-        employee = Employee(first_name=first_name, last_name=last_name, email=email, phone_number=phone_number)
-        db.session.add(employee)
-        db.session.commit()
-        return redirect(url_for('list_employees'))
-
-    return render_template('add_employee.html', form=form)
-
-@app.route('/employees/edit/<int:id>', methods=['GET', 'POST'])
-def edit_employee(id):
-    employee = Employee.query.get(id)
-    form = EmployeeForm(obj=employee)
-
-    if form.validate_on_submit():
-        form.populate_obj(employee)
-        db.session.commit()
-        return redirect(url_for('list_employees'))
-
-    return render_template('edit_employee.html', form=form, employee=employee)
-@app.route('/employees/delete/<int:id>')
-def delete_employee(id):
-    employee = Employee.query.get(id)
-    db.session.delete(employee)
-    db.session.commit()
-    return redirect(url_for('list_employees'))
-@app.route('/products')
-def list_products():
+@app.route('/products', methods=["GET", "POST"])
+def product():
     products = Product.query.all()
-    return render_template('products.html', products=products)
-@app.route('/products/add', methods=['GET', 'POST'])
-def add_product():
-    form = ProductForm()
+    today = datetime.date.today()
+    day_month_year = today.strftime("%d %B, %Y")
+    if request.method == "POST":
+        filter_ = request.form.get('product_selection')
+        print(filter_)
+        print(filter_)
+        products = Product.query.filter(and_(Product.productCategory == filter_))
+        products = products or 0
+        print(products)
+        return render_template('userInterface.html', products=products)
 
-    if form.validate_on_submit():
-        name = form.name.data
-        description = form.description.data
-        qty_stock = form.qty_stock.data
-        price = form.price.data
+    return render_template('userInterface.html', products=products)
 
-        product = Product(name=name, description=description, qty_stock=qty_stock, price=price)
-        db.session.add(product)
+
+@app.template_filter('b64encode')
+def b64encode_filter(s):
+    if s:
+        return base64.b64encode(s).decode('utf-8')
+    else:
+        return ""
+
+
+@app.route('/add-products', methods=['GET', 'POST'])
+def addProduct():
+    if request.method == 'POST':
+        file = request.files['file']
+        upload = Product(
+            productName=request.form.get('productName'),
+            productImg=file.read(),
+            productDiscription=request.form.get('discription'),
+            productPrice=request.form.get('price'),
+            productCategory=request.form.get('category')
+        )
+        db.session.add(upload)
         db.session.commit()
-        return redirect(url_for('list_products'))
+        return render_template('addproduct.html')
+    return render_template('addproduct.html')
 
-    return render_template('add_product.html', form=form)
 
-@app.route('/products/edit/<int:id>', methods=['GET', 'POST'])
-def edit_product(id):
-    product = Product.query.get(id)
-    form = ProductForm(obj=product)
-
-    if form.validate_on_submit():
-        form.populate_obj(product)
+@app.route('/add-jobs', methods=['GET', 'POST'])
+def addJobs():
+    if request.method == 'POST':
+        upload = Job(
+            job_title=request.form.get('job_title'),
+            salary=request.form.get('salary')
+        )
+        db.session.add(upload)
         db.session.commit()
-        return redirect(url_for('list_products'))
+        jobs = Job.query.all()
+        return render_template('addJobs.html', jobs=jobs)
+    return render_template('addJobs.html')
 
-    return render_template('edit_product.html', form=form, product=product)
-@app.route('/products/delete/<int:id>')
-def delete_product(id):
-    product = Product.query.get(id)
-    db.session.delete(product)
-    db.session.commit()
-    return redirect(url_for('list_products'))
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+@app.route('/add-employee', methods=['GET', 'POST'])
+def addEmployee():
+    jobs = Job.query.all()
+    if request.method == 'POST':
+        print()
+        filter_ = request.form.getlist('job_title')
+        job = Job.query.filter(Job.job_title == filter_[0]).first()
+        print(job)
+        upload = Employees(
+            firstName=request.form.get('fName'),
+            middleName=request.form.get('mName'),
+            lastName=request.form.get('lName'),
+            userName=request.form.get('uName'),
+            password=request.form.get('password'),
+            job_id=job.id
+        )
+        db.session.add(upload)
+        db.session.commit()
+    return render_template('addEmployee.html', jobs=jobs)
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
