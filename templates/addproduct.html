@@ -12,13 +12,14 @@
           <label for="category">Choose a Meal Type:</label>
   <select name="category" id="category">
                     <option value="all">Select Meal Category</option>
-
-      <option value="electronics">Electronics</option>
-      <option value="groceries">Groceries</option>
-      <option value="books">Books</option>
-    <option value="sports">Sports</option>
-    <option value="tickets">Movie Tickets</option>
-    <option value="furniture">Furniture</option>
+        {% for category in categories%}
+      <option value={{category.name}}>{{category.name}}</option>
+      {% endfor %}
+<!--      <option value="groceries">Groceries</option>-->
+<!--      <option value="books">Books</option>-->
+<!--    <option value="sports">Sports</option>-->
+<!--    <option value="tickets">Movie Tickets</option>-->
+<!--    <option value="furniture">Furniture</option>-->
   </select>
         <input type="text" name="productName" placeholder="Product Name" required="required"/>
         <input type="text" name="price" placeholder="Price" required="required"/>
