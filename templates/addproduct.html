@@ -1,18 +1,18 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Add Supplier</title>
 </head>
 <body>
-<form action="{{ url_for('addProduct') }}" method="post" enctype="multipart/form-data">
-          <label for="category">Choose a Meal Type:</label>
+<form action="{{ url_for('add_product') }}" method="post" enctype="multipart/form-data">
+
+<label for="category">Choose a Category:</label>
   <select name="category" id="category">
-                    <option value="all">Select Meal Category</option>
-        {% for category in categories%}
+                    <option value="all">Select Category</option>
+        {% for category in categories %}
       <option value={{category.name}}>{{category.name}}</option>
       {% endfor %}
 <!--      <option value="groceries">Groceries</option>-->
@@ -21,14 +21,28 @@
 <!--    <option value="tickets">Movie Tickets</option>-->
 <!--    <option value="furniture">Furniture</option>-->
   </select>
-        <input type="text" name="productName" placeholder="Product Name" required="required"/>
-        <input type="text" name="price" placeholder="Price" required="required"/>
-    <input type="text" name="discription" placeholder="discription" required="required"/>
-    <input type="file" name="file" required="required"/>
-        {% for supplier in suppliers %}
-        <input type="checkbox" id={{supplier.company_name}} name=comp_name value={{supplier.company_name}}>
-        <label for={{supplier.company_name}}>{{supplier.company_name}}</label><br>
-        {% endfor %}
+
+  <label for="supplier">Choose a Supplier:</label>
+  <select name="supplier" id="supplier">
+                          <option value="all">Select Supplier</option>
+
+    {% for supplier in suppliers %}
+      <option value="ss">{{supplier.company_name}}</option>
+    {% endfor %}
+  </select>
+
+            <label for="product_name">Product Name:</label>
+
+        <input type="text" id="product_name" name="productName" placeholder="Product Name" required="required"/>
+            <label for="price">Price:</label>
+
+        <input type="text" id="price" name="price" placeholder="Price" required="required"/>
+                <label for="description">Description:</label>
+
+    <input type="text" id="description" name="discription" placeholder="discription" required="required"/>
+                <label for="file">File:</label>
+
+    <input type="file" id="file" name="file" required="required"/>
         <button type="submit">Done</button>
     </form>
 </body>
