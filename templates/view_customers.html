@@ -1,0 +1,28 @@
+<h3>View Customer</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Customer ID</th>
+            <th>First Name</th>
+            <th>Middle Name</th>
+            <th>Last Name</th>
+            <th>Username</th>
+            <th>Password</th>
+            <!-- Add more attribute headers as needed -->
+        </tr>
+    </thead>
+    <tbody>
+    {% for customer in customers %}
+            <tr>
+
+                <td>{{ customer.id }}</td>
+
+    <td>{{ customer.firstName }} </td>
+    <td>{{customer.middleName}}</td>
+    <td>{{customer.lastName}}</td>
+    <td>{{customer.userName}}</td>
+    <td>{{customer.password}}</td>
+            </tr>
+    {% endfor %}
+    </tbody>
+</table>
