@@ -58,3 +58,20 @@ function showView(viewName) {
         })
         .catch(error => console.error('Error fetching view:', error));
 }
+// ... (previous script content) ...
+
+
+function showEditForm(supplierId) {
+    const editContainer = document.getElementById('edit-container');
+    fetch(`/edit_supplier/${supplierId}`)
+        .then(response => response.text())
+        .then(html => {
+            editContainer.innerHTML = html;
+        })
+        .catch(error => console.error('Error fetching edit form:', error));
+}
+
+function hideEditForm() {
+    const editContainer = document.getElementById('edit-container');
+    editContainer.innerHTML = ''; // Clear the content
+}

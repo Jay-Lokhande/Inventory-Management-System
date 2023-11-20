@@ -9,6 +9,9 @@
             <th>Username</th>
             <th>Password</th>
             <th>Job ID</th>
+                        <th>Edit</th>
+            <th>Delete</th>
+
             <!-- Add more attribute headers as needed -->
         </tr>
     </thead>
@@ -23,7 +26,8 @@
                 <td>{{ employee.userName }}</td>
                 <td>{{ employee.password }}</td>
                 <td>{{ employee.job_id }}</td>
-
+          <td><button onclick="showEditForm(1)">Edit</button></td>
+            <td><a href="/delete_supplier/1">Delete</a></td>
             </tr>
     {% endfor %}
     </tbody>

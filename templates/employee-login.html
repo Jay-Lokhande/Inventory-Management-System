@@ -103,38 +103,60 @@
 <body>
 
 <div class="container">
+      {% with messages = get_flashed_messages() %}
+ {% if messages %}
+  <ul>
+  {% for message in messages %}
+    <li>{{ message }}</li>
+  {% endfor %}
+  </ul>
+ {% endif %}
+{% endwith %}
   <div class="tabs">
     <div class="tab" onclick="showTab('login')">Login</div>
     <div class="tab" onclick="showTab('register')">Register</div>
   </div>
   <div class="content" id="loginContent">
     <!-- Login Form -->
-    <form>
+    <form action="{{ url_for('employee_login') }}" method="post">
       <div class="form-group">
-        <label for="employeeUsername">Username:</label>
-        <input type="text" id="employeeUsername" name="employeeUsername" required>
+        <label for="loginUsername">Username:</label>
+        <input type="text" id="loginUsername" name="loginUsername" required>
       </div>
       <div class="form-group">
-        <label for="employeePassword">Password:</label>
-        <input type="password" id="employeePassword" name="employeePassword" required>
+        <label for="loginPassword">Password:</label>
+        <input type="password" id="loginPassword" name="loginPassword" required>
       </div>
       <button type="submit">Login</button>
     </form>
   </div>
   <div class="content" id="registerContent" style="display: none;">
     <!-- Registration Form -->
-    <form>
-      <div class="form-group">
-        <label for="employeeRegisterUsername">Username:</label>
-        <input type="text" id="employeeRegisterUsername" name="employeeRegisterUsername" required>
+  <form action="{{ url_for('employee_register') }}" method="post">
+
+            <div class="form-group">
+        <label for="firstName">First Name:</label>
+        <input type="text" id="firstName" name="firstName" required>
+      </div>
+                  <div class="form-group">
+        <label for="middleName">Middle Name:</label>
+        <input type="text" id="middleName" name="middleName" required>
+      </div>
+            <div class="form-group">
+        <label for="lastName">Last Name:</label>
+        <input type="text" id="lastName" name="lastName" required>
+      </div>
+            <div class="form-group">
+        <label for="registerUsername">Username:</label>
+        <input type="text" id="registerUsername" name="registerUsername" required>
       </div>
       <div class="form-group">
-        <label for="employeeRegisterEmail">Email:</label>
-        <input type="email" id="employeeRegisterEmail" name="employeeRegisterEmail" required>
+        <label for="registerEmail">Email:</label>
+        <input type="email" id="registerEmail" name="registerEmail" required>
       </div>
       <div class="form-group">
-        <label for="employeeRegisterPassword">Password:</label>
-        <input type="password" id="employeeRegisterPassword" name="employeeRegisterPassword" required>
+        <label for="registerPassword">Password:</label>
+        <input type="password" id="registerPassword" name="registerPassword" required>
       </div>
       <button type="submit">Register</button>
     </form>

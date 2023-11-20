@@ -102,16 +102,25 @@
 </head>
 <body>
 
-<a href="employee-login.html" class="employee-login">Employee Login</a>
+<a href="{{url_for('employee_login')}}" class="employee-login">Employee Login</a>
 
 <div class="container">
+  {% with messages = get_flashed_messages() %}
+ {% if messages %}
+  <ul>
+  {% for message in messages %}
+    <li>{{ message }}</li>
+  {% endfor %}
+  </ul>
+ {% endif %}
+{% endwith %}
   <div class="tabs">
     <div class="tab" onclick="showTab('login')">Login</div>
     <div class="tab" onclick="showTab('register')">Register</div>
   </div>
   <div class="content" id="loginContent">
     <!-- Login Form -->
-    <form>
+    <form action="{{ url_for('user_login') }}" method="post">
       <div class="form-group">
         <label for="loginUsername">Username:</label>
         <input type="text" id="loginUsername" name="loginUsername" required>
@@ -125,8 +134,21 @@
   </div>
   <div class="content" id="registerContent" style="display: none;">
     <!-- Registration Form -->
-    <form>
-      <div class="form-group">
+    <form action="{{ url_for('user_register') }}" method="post">
+
+            <div class="form-group">
+        <label for="firstName">First Name:</label>
+        <input type="text" id="firstName" name="firstName" required>
+      </div>
+                  <div class="form-group">
+        <label for="middleName">Middle Name:</label>
+        <input type="text" id="middleName" name="middleName" required>
+      </div>
+            <div class="form-group">
+        <label for="lastName">Last Name:</label>
+        <input type="text" id="lastName" name="lastName" required>
+      </div>
+            <div class="form-group">
         <label for="registerUsername">Username:</label>
         <input type="text" id="registerUsername" name="registerUsername" required>
       </div>
