@@ -13,7 +13,7 @@
   <select name="category" id="category">
                     <option value="all">Select Category</option>
         {% for category in categories %}
-      <option value={{category.name}}>{{category.name}}</option>
+      <option value='{{category.id}}'>{{category.name}}</option>
       {% endfor %}
 <!--      <option value="groceries">Groceries</option>-->
 <!--      <option value="books">Books</option>-->
@@ -27,7 +27,7 @@
                           <option value="all">Select Supplier</option>
 
     {% for supplier in suppliers %}
-      <option value="ss">{{supplier.company_name}}</option>
+      <option value='{{supplier.id}}'>{{supplier.company_name}}</option>
     {% endfor %}
   </select>
 
