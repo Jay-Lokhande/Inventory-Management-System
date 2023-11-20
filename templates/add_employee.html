@@ -9,12 +9,20 @@
 
 
     <form action="{{ url_for('add_employee') }}" method="post">
-             <select name="jobs" id="jobs">
+             <select name="job" id="jobs">
         <option value="all">Select Jobs</option>
         {% for job in jobs %}
-        <option value="{{job.job_title}}">{{job.job_title}}</option>
+        <option value="{{job.id}}">{{job.job_title}}</option>
         {% endfor %}
         </select>
+          <select name="location" id="location">
+                          <option value="all">Select Location</option>
+
+    {% for location in locations %}
+      <option value='{{location.id}}'>{{location.city}}</option>
+    {% endfor %}
+  </select>
+
                 <label for="fName">First Name:</label>
         <input type="text" name="fName" id="fName" placeholder="First Name" required="required"/>
                 <label for="mName">Middle Name:</label>
@@ -24,7 +32,10 @@
         <input type="text" id="lName" name="lName" placeholder="Last Name" required="required"/>
         <label for="uName">Username:</label>
         <input type="text" id="uName" name="uName" placeholder="Username" required="required"/>
-        <label for="password">Last Name:</label>
+                   <label for="email">Email:</label>
+
+        <input type="email" id="email" name="email" required>
+        <label for="password">Password:</label>
         <input type="text" id="password" name="password" placeholder="Password" required="required"/>
 
         <button type="submit" class="btn btn-primary btn-block btn-large">Add</button>
