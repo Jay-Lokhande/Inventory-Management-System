@@ -360,36 +360,33 @@ def add_job():
 def add_employee():
     jobs = Job.query.all()
     locations = Location.query.all()
+
     if request.method == 'POST':
         location_id = int(request.form.get('location'))
-        location = Location.query.filter_by(id=location_id).first()
-        print()
-        job_id = int(request.form.get('job'))
-        job = Job.query.filter_by(id=job_id).first()
+        location = Location.query.get(location_id) if location_id != -1 else None
 
-        if not job:
-            job = None
-        if not location:
-            location = None
-        print(job)
+        job_id = int(request.form.get('job'))
+        job = Job.query.get(job_id) if job_id != -1 else None
+
         if Employees.query.filter_by(userName=request.form.get('uName')).first():
-            flash("This username already exist!")
-            return redirect(url_for('add_employee'))
+            flash("This username already exists!", 'error')
         elif Users.query.filter_by(email=request.form.get('email')).first():
-            flash("You've already signed up with that email, log in instead!")
-            return redirect(url_for('add_employee'))
-        upload = Employees(
-            firstName=request.form.get('fName'),
-            middleName=request.form.get('mName'),
-            lastName=request.form.get('lName'),
-            userName=request.form.get('uName'),
-            password=request.form.get('password'),
-            email=request.form.get('email'),
-            job=job,
-            location=location
-        )
-        db.session.add(upload)
-        db.session.commit()
+            flash("You've already signed up with that email, log in instead!", 'error')
+        else:
+            new_employee = Employees(
+                firstName=request.form.get('fName'),
+                middleName=request.form.get('mName'),
+                lastName=request.form.get('lName'),
+                userName=request.form.get('uName'),
+                password=request.form.get('password'),
+                email=request.form.get('email'),
+                job=job,
+                location=location
+            )
+
+            db.session.add(new_employee)
+            db.session.commit()
+            flash("Employee added successfully!", 'success')
         return redirect(url_for('index'))
     return render_template('add_employee.html', jobs=jobs, locations=locations)
 
@@ -399,7 +396,7 @@ def delete_employee(id):
     if employee:
         db.session.delete(employee)
         db.session.commit()
-        return 
+        return
     else:
         return jsonify({'error': 'User not found'}), 404
 

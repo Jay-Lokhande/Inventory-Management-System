@@ -36,37 +36,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 // ... (previous script content) ...
-function showForm(formName) {
-    const formsContainer = document.getElementById('forms-container');
+    function showForm(formName) {
+        const formsContainer = document.getElementById('forms-container');
+        fetch(`/${formName}`)
+            .then(response => response.text())
+            .then(html => {
+                formsContainer.innerHTML = html;
+            })
+            .catch(error => console.error('Error fetching form:', error));
+    }
 
-    // Fetch the form HTML asynchronously
-    fetch(`/${formName}`)
-        .then(response => response.text())
-        .then(html => {
-            formsContainer.innerHTML = html;
+    function submitForm(formName) {
+        const form = document.getElementById(`${formName}-form`);
+        const formsContainer = document.getElementById('forms-container');
 
-            // Add a submit event listener to the form
-            const form = formsContainer.querySelector('form');
-            if (form) {
-                form.addEventListener('submit', function (event) {
-                    event.preventDefault();
-
-                    // Handle the form submission asynchronously
-                    fetch(form.action, {
-                        method: form.method,
-                        body: new FormData(form),
-                    })
-                    .then(response => response.text())
-                    .then(submitResult => {
-                        // Update the content with the form HTML or result message
-                        formsContainer.innerHTML = submitResult;
-                    })
-                    .catch(error => console.error('Error submitting form:', error));
-                });
-            }
+        fetch(`/${formName}`, {
+            method: 'POST',
+            body: new FormData(form),
         })
-        .catch(error => console.error('Error fetching form:', error));
-}
+            .then(response => response.text())
+            .then(html => {
+                formsContainer.innerHTML = html;
+            })
+            .catch(error => console.error('Error submitting form:', error));
+    }
 
 // ... (previous script content) ...
 
