@@ -172,7 +172,7 @@ def get_products(category_id):
     # return jsonify([{'id': product.id, 'name': product.productName, 'price': product.productPrice} for product in products])
 
 
-@app.route('/reg', methods=['GET', 'POST'])
+@app.route('/user-register', methods=['GET', 'POST'])
 def user_register():
     if request.method == 'POST':
         fname = request.form.get('firstName')
@@ -225,7 +225,7 @@ def employee_login():
     return render_template('employee-login.html')
 
 
-@app.route('/employee', methods=['GET', 'POST'])
+@app.route('/employee-register', methods=['GET', 'POST'])
 def employee_register():
     if request.method == 'POST':
         fname = request.form.get('firstName')
@@ -236,10 +236,10 @@ def employee_register():
         password = request.form.get('registerPassword')
         if Employees.query.filter_by(userName=uname).first():
             flash("This username already exist!")
-            return redirect(url_for('user_login'))
+            return redirect(url_for('employee_login'))
         elif Employees.query.filter_by(email=email).first():
             flash("You've already signed up with that email, log in instead!")
-            return redirect(url_for('user_login'))
+            return redirect(url_for('employee_login'))
         upload = Employees(
             firstName=fname,
             middleName=mname,
@@ -251,14 +251,16 @@ def employee_register():
         db.session.add(upload)
         db.session.commit()
         curr = Employees.query.filter_by(userName=uname).first()
-        flash('Logged in successfully.', 'success')
-        return redirect(url_for('employee_interface', curr=curr))
+        users_same_location = Users.query.filter_by(loc_id=curr.loc_id).all()
+        print(curr)
+        # flash('Logged in successfully.', 'success')
+        return render_template('employee_interface.html', curr=curr, users_same_location=users_same_location)
         # return render_template('employee_interface.html', curr=curr)
     return render_template('employee-login.html')
 
 @app.route('/employee_interface')
-def employee_interface(curr):
-    return render_template('employee_interface.html', curr=curr)
+def employee_interface(curr, users_same_location):
+    return render_template('employee_interface.html', curr=curr, users_same_location=users_same_location)
 
 # @app.route('/tasks')
 # def tasks():
