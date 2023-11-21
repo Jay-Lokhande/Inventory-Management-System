@@ -26,8 +26,8 @@
                 <td>{{ employee.userName }}</td>
                 <td>{{ employee.password }}</td>
                 <td>{{ employee.job_id }}</td>
-          <td><button onclick="showEditForm(1)">Edit</button></td>
-            <td><a href="">Delete</a></td>
+                <td><button onclick="showEditForm({{ employee.id }})">Edit</button></td>
+               <td><button onclick="deleteItem('employees', {{ employee.id }})">Delete</button></td>
             </tr>
     {% endfor %}
     </tbody>
