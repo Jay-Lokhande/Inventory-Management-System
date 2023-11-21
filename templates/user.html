@@ -153,7 +153,11 @@ body {
     <div class="cart">
         <button onclick="showCart()">View Cart</button>
         <span id="cart-count">0</span>
+            <button onclick="viewMyOrders()">My Orders</button>
+
     </div>
+<button onclick="placeOrder()">Place My Order</button>
+
 </div>
 
 <div class="container">
@@ -172,18 +176,42 @@ body {
 <div class="cart-container" id="cart-container">
     <!-- Cart content goes here -->
     <div class="cart-modal">
-        <h2>Shopping Cart</h2>
-        <ul id="cart-items">
-            <!-- Cart items will be dynamically added here -->
-        </ul>
-        <p>Total: $<span id="cart-total">0.00</span></p>
-        <div>
-            <button onclick="checkoutSelected()">Checkout Selected</button>
-            <button onclick="checkoutAll()">Checkout All</button>
-        </div>
-        <button onclick="hideCart()">Close Cart</button>
+    <h2>Shopping Cart</h2>
+    <ul id="cart-items">
+        <!-- Cart items will be dynamically added here -->
+    </ul>
+    <p>Total: $<span id="cart-total">0.00</span></p>
+    <div>
+        <button onclick="checkoutSelected()">Checkout Selected</button>
+        <button onclick="checkoutAll()">Checkout All</button>
+    </div>
+    <button onclick="hideCart()">Close Cart</button>
+</div>
+
+</div>
+
+<!-- Add this code to your existing HTML file -->
+
+<div class="cart-container" id="orders-container">
+    <!-- Orders content goes here -->
+    <div class="cart-modal">
+<div class="orders-container">
+    <h2>Delivered Orders</h2>
+    <ul id="delivered-orders">
+        <!-- Delivered orders will be dynamically added here -->
+    </ul>
+</div>
+        <div class="orders-container">
+    <h2>Pending Orders</h2>
+    <ul id="pending-orders">
+        <!-- Pending orders will be dynamically added here -->
+    </ul>
+</div>
+
+        <button onclick="hideOrders()">Close Orders</button>
     </div>
 </div>
+
 
 
 <script>
@@ -225,7 +253,9 @@ function createProductElement(product) {
     productDiv.innerHTML = `
         <img src="data:image/jpeg;base64,${product.image}" alt="${product.name}" style="width: 200px; height: auto;" />
         <h3>${product.name}</h3>
+        <p id="product-quantity-${ product.id }">${ product.quantity }</p>
         <p>$${product.price.toFixed(2)}</p>
+        <p>Supplier: ${product.supplier}</p>
         <button onclick="addToCart(${product.id}, '${product.name}', ${product.price})">Add to Cart</button>
     `;
 
@@ -239,25 +269,39 @@ function addToCart(productId, productName, productPrice) {
     cartTotal += newItem.price;
     updateCartUI();
 }
+function createCartItemElement(item) {
+    const li = document.createElement('li');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = item.id;
+    checkbox.checked = true; // Set the default state
+    checkbox.addEventListener('change', () => updateCartUI());
 
+    li.appendChild(checkbox);
+    li.innerHTML += `${item.name} - $${item.price.toFixed(2)}`;
+    return li;
+}
 function updateCartUI() {
     const cartCount = document.getElementById('cart-count');
     const cartItemsList = document.getElementById('cart-items');
     const cartTotalElement = document.getElementById('cart-total');
 
     cartCount.textContent = cartItems.length;
-    cartItemsList.innerHTML = '';
+
+    // Remove all items from the list
+    while (cartItemsList.firstChild) {
+        cartItemsList.removeChild(cartItemsList.firstChild);
+    }
 
     cartItems.forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = `${item.name} - $${item.price.toFixed(2)}`;
+        const li = createCartItemElement(item);
         cartItemsList.appendChild(li);
     });
 
     cartTotalElement.textContent = cartTotal.toFixed(2);
 }
 
-function checkoutSelected() {
+/*function checkoutSelected() {
     const checkboxes = document.querySelectorAll('#cart-items input[type="checkbox"]:checked');
 
     if (checkboxes.length === 0) {
@@ -272,8 +316,24 @@ function checkoutSelected() {
 
     alert(`Thank you for purchasing: ${selectedItems.map(item => item.name).join(', ')}`);
     removeCheckedItems(checkboxes);
-}
+}*/
+function checkoutSelected() {
+    const checkboxes = document.querySelectorAll('#cart-items input[type="checkbox"]:checked');
 
+    if (checkboxes.length === 0) {
+        alert('Please select items to checkout.');
+        return;
+    }
+
+    const selectedItems = Array.from(checkboxes).map(checkbox => {
+        const itemId = parseInt(checkbox.value, 10);
+        return cartItems.find(item => item.id === itemId);
+    });
+
+    placeOrder(selectedItems);
+    removeCheckedItems(checkboxes);
+}
+/*
 function checkoutAll() {
     if (cartItems.length === 0) {
         alert('Your cart is empty.');
@@ -285,7 +345,20 @@ function checkoutAll() {
     cartTotal = 0;
     updateCartUI();
     hideCart();
+}*/
+function checkoutAll() {
+    if (cartItems.length === 0) {
+        alert('Your cart is empty.');
+        return;
+    }
+
+    placeOrder(cartItems);
+    cartItems = [];
+    cartTotal = 0;
+    updateCartUI();
+    hideCart();
 }
+
 
 function removeCheckedItems(checkboxes) {
     checkboxes.forEach(checkbox => {
@@ -300,6 +373,115 @@ function removeCheckedItems(checkboxes) {
 
     updateCartUI();
 }
+function addToCart(productId, productName, productPrice) {
+    const quantity = 1; // You can modify this to allow the user to specify quantity
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    formData.append('quantity', quantity);
+
+    fetch('/add_to_cart', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const newItem = { id: productId, name: productName, price: productPrice, quantity: quantity };
+            cartItems.push(newItem);
+            cartTotal += newItem.price;
+            updateCartUI();
+
+            // Update the product quantity displayed in the product listing
+            const productQuantityElement = document.getElementById(`product-quantity-${productId}`);
+            if (productQuantityElement) {
+                const remainingQuantity = parseInt(productQuantityElement.textContent, 10) - quantity;
+                productQuantityElement.textContent = remainingQuantity;
+            }
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => console.error('Error adding to cart:', error));
+}
+function placeOrder(items) {
+    // Prepare the order data
+    const order = {
+        userId: 1, // Replace with the actual user ID
+        products: items.map(item => ({ productId: item.id, quantity: 1 })) // Set quantity as needed
+    };
+
+    // Send the order to the server
+    fetch('/place_order', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(order),
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Order placed successfully!');
+        // You may want to update the UI or perform other actions after placing the order
+    })
+    .catch(error => {
+        console.error('Error placing order:', error);
+        alert('Failed to place the order. Please try again.');
+    });
+}
+function viewMyOrders() {
+    fetch('/get_orders')
+        .then(response => response.json())
+        .then(orders => {
+            // Display orders, you can update the UI as needed
+            console.log('User Orders:', orders);
+            alert('Viewing My Orders: ' + JSON.stringify(orders));
+        })
+        .catch(error => console.error('Error fetching orders:', error));
+}
+// Add this function to your existing JavaScript code
+
+function viewMyOrders() {
+    const ordersContainer = document.getElementById('orders-container');
+
+    fetch('/get_orders')
+        .then(response => response.json())
+        .then(orders => {
+            const deliveredOrdersList = document.getElementById('delivered-orders');
+            const pendingOrdersList = document.getElementById('pending-orders');
+
+            deliveredOrdersList.innerHTML = '';
+            pendingOrdersList.innerHTML = '';
+
+            //const orderItemsList = document.getElementById('order-items');
+            //orderItemsList.innerHTML = '';
+
+            orders.forEach(order => {
+                const li = document.createElement('li');
+                                if (order.product && order.product.price !== undefined && order.quantity !== undefined) {
+
+                const cost = order.quantity * order.product.price; // Calculate the cost
+
+                li.textContent = `${order.product.name} - Quantity: ${order.quantity} - Cost: $${cost.toFixed(2)}`;
+               if (order.delivered) {
+                    // Display in the delivered orders section
+                    deliveredOrdersList.appendChild(li);
+                } else {
+                    // Display in the pending orders section
+                    pendingOrdersList.appendChild(li);
+                }
+              }
+            });
+
+            ordersContainer.style.display = 'flex';
+        })
+        .catch(error => console.error('Error fetching orders:', error));
+}
+
+function hideOrders() {
+    const ordersContainer = document.getElementById('orders-container');
+    ordersContainer.style.display = 'none';
+}
+
 
 </script>
 <script src="script.js"></script>
