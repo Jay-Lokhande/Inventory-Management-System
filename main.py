@@ -319,6 +319,14 @@ def add_user():
     if request.method == 'POST':
         location_id = int(request.form.get('location'))
         location = Location.query.filter_by(id=location_id).first()
+        if not location:
+            location = None
+        if Users.query.filter_by(userName=request.form.get('uName')).first():
+            flash("This username already exist!")
+            return redirect(url_for('add_user'))
+        elif Users.query.filter_by(email=request.form.get('email')).first():
+            flash("You've already signed up with that email, log in instead!")
+            return redirect(url_for('index'))
         new_user = Users(
             firstName=request.form.get('fName'),
             middleName=request.form.get('mName'),
@@ -364,12 +372,19 @@ def add_employee():
         if not location:
             location = None
         print(job)
+        if Employees.query.filter_by(userName=request.form.get('uName')).first():
+            flash("This username already exist!")
+            return redirect(url_for('add_employee'))
+        elif Users.query.filter_by(email=request.form.get('email')).first():
+            flash("You've already signed up with that email, log in instead!")
+            return redirect(url_for('add_employee'))
         upload = Employees(
             firstName=request.form.get('fName'),
             middleName=request.form.get('mName'),
             lastName=request.form.get('lName'),
             userName=request.form.get('uName'),
             password=request.form.get('password'),
+            email=request.form.get('email'),
             job=job,
             location=location
         )
