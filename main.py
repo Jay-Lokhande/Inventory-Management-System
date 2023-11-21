@@ -31,6 +31,7 @@ class Users(db.Model):
     password = db.Column(db.String(50), nullable=False)
     loc_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
     location = relationship("Location", back_populates="userlocation")
+    orders = relationship('Order', back_populates='customer')
 
 
 class Customer(db.Model):
@@ -41,7 +42,6 @@ class Customer(db.Model):
     lastName = db.Column(db.String(50), nullable=False)
     userName = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(50), nullable=False)
-    order = relationship("Order", back_populates="orderedCustomer")
 
 
 class Employees(db.Model):
@@ -86,12 +86,14 @@ class Product(db.Model):
     productImg = db.Column(db.LargeBinary)
     productDiscription = db.Column(db.String(255))
     productPrice = db.Column(db.Integer)
+    quantity = db.Column(db.Integer)
     # productCategory = db.Column(db.String(100))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     category = relationship("Category", back_populates="product")
 
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=False)
     supplier = relationship("Supplier", back_populates="product")
+    orders = relationship('Order', back_populates='product')
 
 
 class Category(db.Model):
@@ -105,12 +107,14 @@ class Category(db.Model):
 class Order(db.Model):
     __tablename__ = "orders"
     id = db.Column(db.Integer, primary_key=True)
-    product = db.Column(db.String(250), nullable=False)
-    productQuantity = db.Column(db.String(250), nullable=False)
-    date = db.Column(db.Date, default=datetime.date.today)
-    price = db.Column(db.Integer)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
-    orderedCustomer = relationship("Customer", back_populates="order")
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    order_date = db.Column(db.DateTime, default=datetime.datetime.today().date())
+    customer = relationship('Users', back_populates='orders')
+    product = relationship('Product', back_populates='orders')
+    delivered = db.Column(db.Boolean, default=False)
+
 
 
 class Supplier(db.Model):
@@ -141,20 +145,101 @@ def user_login():
             # return redirect(url_for('index'))
         else:
             flash('Logged in successfully.', 'success')
-            time.sleep(2)
+            # time.sleep(2)
+            session['user_id'] = user.id
             return redirect(url_for('home'))
             # flash('Invalid username or password.', 'error')
     return render_template('login.html')
 
 
 @app.route('/home-page')
-def homes():
+def home():
     categories = Category.query.all()
     products = Product.query.all()
     product = Product.query.filter_by(id=1).first()
     print(product.category.name)
     return render_template('user.html', products=products, categories=categories)
 
+
+from flask import request, jsonify
+
+
+@app.route('/add_to_cart', methods=['POST'])
+def add_to_cart():
+    try:
+        product_id = int(request.form.get('product_id'))
+        quantity = int(request.form.get('quantity', 1))
+
+        product = Product.query.get(product_id)
+        if product:
+            if product.quantity >= quantity:
+                # Update the quantity in the database
+                product.quantity -= quantity
+                db.session.commit()
+
+                # Add the item to the cart
+                cart_item = {
+                    'id': product.id,
+                    'name': product.productName,
+                    'price': product.productPrice,
+                    'quantity': quantity
+                }
+                session_cart = session.get('cart', [])
+                session_cart.append(cart_item)
+                session['cart'] = session_cart
+
+                return jsonify({'success': True, 'message': 'Item added to cart successfully'})
+
+            return jsonify({'success': False, 'message': 'Not enough quantity available'})
+
+        return jsonify({'success': False, 'message': 'Product not found'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
+from sqlalchemy.exc import IntegrityError
+
+
+@app.route('/place_order', methods=['POST'])
+def place_order():
+    data = request.json
+
+    user_id = data.get('userId')
+    products = data.get('products', [])
+
+    try:
+        for product_data in products:
+            product_id = product_data['productId']
+            quantity = product_data['quantity']
+
+            # Check if an order for the same product and user already exists
+            existing_order = Order.query.filter_by(user_id=user_id, product_id=product_id).first()
+
+            if existing_order:
+                # If an order exists, update the quantity
+                existing_order.quantity += quantity
+            else:
+                # If no order exists, create a new order
+                order = Order(user_id=user_id, product_id=product_id, quantity=quantity)
+                db.session.add(order)
+
+        db.session.commit()
+        return jsonify({'message': 'Order placed successfully'}), 200
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'error': 'IntegrityError - Duplicate key'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_orders', methods=['GET'])
+def get_orders():
+    # Assuming you have a User model with a relationship to the Order model
+    user_id = 1  # Implement a function to get the current user ID
+    user_orders = Order.query.filter_by(user_id=user_id).all()
+
+    orders = [{'product': {'name': order.product.productName, 'price': order.product.productPrice}, 'quantity': order.quantity, 'delivered': order.delivered} for order in user_orders]
+    return jsonify(orders)
 
 @app.route('/get_products/<category_id>')
 def get_products(category_id):
@@ -165,6 +250,7 @@ def get_products(category_id):
                       'description': product.productDiscription,
                       'price': product.productPrice, 'category': product.category.name,
                       'supplier': product.supplier.company_name,
+                      'quantity': product.quantity,
                       'image': base64.b64encode(product.productImg).decode('utf-8') if product.productImg else None} for
                      product in products]
     # print(products_list)
@@ -221,7 +307,7 @@ def employee_login():
             time.sleep(2)
             curr = Employees.query.filter_by(userName=username).first()
             users_same_location = Users.query.filter_by(loc_id=curr.loc_id).all()
-            return render_template('employee_interface.html', curr=curr, users_same_location=users_same_location)
+            return render_template('employee_interface.html', curr=curr, users_same_location=users_same_location, city=curr.location.city)
     return render_template('employee-login.html')
 
 
@@ -251,6 +337,7 @@ def employee_register():
         db.session.add(upload)
         db.session.commit()
         curr = Employees.query.filter_by(userName=uname).first()
+
         users_same_location = Users.query.filter_by(loc_id=curr.loc_id).all()
         print(curr)
         # flash('Logged in successfully.', 'success')
@@ -258,9 +345,11 @@ def employee_register():
         # return render_template('employee_interface.html', curr=curr)
     return render_template('employee-login.html')
 
+
 @app.route('/employee_interface')
 def employee_interface(curr, users_same_location):
     return render_template('employee_interface.html', curr=curr, users_same_location=users_same_location)
+
 
 # @app.route('/tasks')
 # def tasks():
@@ -329,13 +418,13 @@ def add_user():
             flash("You've already signed up with that email, log in instead!")
         else:
             new_user = Users(
-            firstName=request.form.get('fName'),
-            middleName=request.form.get('mName'),
-            lastName=request.form.get('lName'),
-            userName=request.form.get('uName'),
-            email=request.form.get('email'),
-            password=request.form.get('password'),
-            location=location
+                firstName=request.form.get('fName'),
+                middleName=request.form.get('mName'),
+                lastName=request.form.get('lName'),
+                userName=request.form.get('uName'),
+                email=request.form.get('email'),
+                password=request.form.get('password'),
+                location=location
             )
             db.session.add(new_user)
             db.session.commit()
@@ -394,8 +483,6 @@ def add_employee():
     return render_template('add_employee.html', jobs=jobs, locations=locations)
 
 
-
-
 @app.route('/<table_name>/delete/<int:item_id>', methods=['DELETE'])
 def delete_item(table_name, item_id):
     if table_name == 'employees':
@@ -437,8 +524,8 @@ def delete_item(table_name, item_id):
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
-
     return jsonify({'error': 'Table name not recognized'}), 400
+
 
 @app.route('/add_category', methods=['GET', 'POST'])
 def add_category():
@@ -542,6 +629,7 @@ def add_product():
             productImg=file.read(),
             productDiscription=request.form.get('discription'),
             productPrice=request.form.get('price'),
+            quantity=request.form.get('quantity'),
             category=category,
             supplier=supplier
         )
@@ -595,16 +683,16 @@ def settings():
 # def protected():
 #     return f'Hello, {current_user.username}!'
 
-@app.route('/home', methods=['GET', 'POST'])
-def home():
-    if request.method == 'POST':
-        userName = request.form.get('userName')
-        password = request.form.get('password')
-        user = Users.query.filter_by(userName=userName).first()
-        category = request.form.get('category')
-        category_product = Product.query.filter(and_(Product.category == category))
-        return render_template('userInterface.html', user=user, category_product=category_product)
-    return render_template('admin.html')
+# @app.route('/home', methods=['GET', 'POST'])
+# def home():
+#     if request.method == 'POST':
+#         userName = request.form.get('userName')
+#         password = request.form.get('password')
+#         user = Users.query.filter_by(userName=userName).first()
+#         category = request.form.get('category')
+#         category_product = Product.query.filter(and_(Product.category == category))
+#         return render_template('userInterface.html', user=user, category_product=category_product)
+#     return render_template('admin.html')
 
 
 @app.route('/products', methods=["GET", "POST"])
