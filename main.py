@@ -393,6 +393,15 @@ def add_employee():
         return redirect(url_for('index'))
     return render_template('add_employee.html', jobs=jobs, locations=locations)
 
+@app.route('/delete_employee/<int:id>', methods=['DELETE'])
+def delete_employee(id):
+    employee = Employees.query.get(id)
+    if employee:
+        db.session.delete(employee)
+        db.session.commit()
+        return 
+    else:
+        return jsonify({'error': 'User not found'}), 404
 
 @app.route('/add_category', methods=['GET', 'POST'])
 def add_category():
