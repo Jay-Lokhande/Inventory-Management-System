@@ -396,10 +396,6 @@ def add_employee():
 
 @app.route('/<table_name>/delete/<int:item_id>', methods=['DELETE'])
 def delete_item(table_name, item_id):
-    # Here, 'table_name' will represent the table name from which an item needs to be deleted
-    # Use 'table_name' dynamically to perform the deletion
-
-    # Example: Deleting an item from the 'employees' table
     if table_name == 'employees':
         item = Employees.query.get(item_id)
         if not item:
@@ -413,7 +409,6 @@ def delete_item(table_name, item_id):
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
-    # Example: Deleting an item from the 'users' table
     elif table_name == 'users':
         item = Users.query.get(item_id)
         if not item:
@@ -427,7 +422,6 @@ def delete_item(table_name, item_id):
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
-    # Example: Deleting an item from the 'products' table
     elif table_name == 'products':
         item = Product.query.get(item_id)
         if not item:
@@ -441,7 +435,6 @@ def delete_item(table_name, item_id):
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
-    # Add handling for other tables as needed
 
     return jsonify({'error': 'Table name not recognized'}), 400
 
