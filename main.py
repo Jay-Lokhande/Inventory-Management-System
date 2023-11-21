@@ -391,15 +391,59 @@ def add_employee():
         return redirect(url_for('index'))
     return render_template('add_employee.html', jobs=jobs, locations=locations)
 
-@app.route('/delete_employee/<int:id>', methods=['DELETE'])
-def delete_employee(id):
-    employee = Employees.query.get(id)
-    if employee:
-        db.session.delete(employee)
-        db.session.commit()
-        return
-    else:
-        return jsonify({'error': 'User not found'}), 404
+
+
+
+@app.route('/<table_name>/delete/<int:item_id>', methods=['DELETE'])
+def delete_item(table_name, item_id):
+    # Here, 'table_name' will represent the table name from which an item needs to be deleted
+    # Use 'table_name' dynamically to perform the deletion
+
+    # Example: Deleting an item from the 'employees' table
+    if table_name == 'employees':
+        item = Employees.query.get(item_id)
+        if not item:
+            return jsonify({'error': f'{table_name.capitalize()} not found'}), 404
+
+        try:
+            db.session.delete(item)
+            db.session.commit()
+            return jsonify({'message': f'{table_name.capitalize()} deleted successfully'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+    # Example: Deleting an item from the 'users' table
+    elif table_name == 'users':
+        item = Users.query.get(item_id)
+        if not item:
+            return jsonify({'error': f'{table_name.capitalize()} not found'}), 404
+
+        try:
+            db.session.delete(item)
+            db.session.commit()
+            return jsonify({'message': f'{table_name.capitalize()} deleted successfully'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+    # Example: Deleting an item from the 'products' table
+    elif table_name == 'products':
+        item = Product.query.get(item_id)
+        if not item:
+            return jsonify({'error': f'{table_name.capitalize()} not found'}), 404
+
+        try:
+            db.session.delete(item)
+            db.session.commit()
+            return jsonify({'message': f'{table_name.capitalize()} deleted successfully'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+    # Add handling for other tables as needed
+
+    return jsonify({'error': 'Table name not recognized'}), 400
 
 @app.route('/add_category', methods=['GET', 'POST'])
 def add_category():
@@ -431,10 +475,11 @@ def view():
     return render_template('view.html')
 
 
-@app.route('/view_user')
-def view_user():
+@app.route('/view_users')
+def view_users():
+    users = Users.query.all()
     # Add logic to fetch and display user data
-    return render_template('view_user.html')
+    return render_template('view_user.html', users=users)
 
 
 @app.route('/view_supplier')
