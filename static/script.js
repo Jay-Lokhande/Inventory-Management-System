@@ -36,17 +36,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 // ... (previous script content) ...
-
 function showForm(formName) {
-    const formsContainer = document.getElementById('forms-container');
-    fetch(`/${formName}`)
+        const formsContainer = document.getElementById('forms-container');
+        fetch(`/${formName}`)
+            .then(response => response.text())
+            .then(html => {
+                formsContainer.innerHTML = html;
+                // Add event listener to the form submit button
+                const form = formsContainer.querySelector('form');
+                if (form) {
+                    form.addEventListener('submit', function (event) {
+                        event.preventDefault();
+                        handleFormSubmit(form);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching form:', error));
+    }
+
+    function handleFormSubmit(form) {
+        const formData = new FormData(form);
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
         .then(response => response.text())
         .then(html => {
+            // Update the forms-container with the updated HTML
+            const formsContainer = document.getElementById('forms-container');
             formsContainer.innerHTML = html;
         })
-        .catch(error => console.error('Error fetching form:', error));
-}
-
+        .catch(error => console.error('Error submitting form:', error));
+    }
 // ... (previous script content) ...
 
 function showView(viewName) {
