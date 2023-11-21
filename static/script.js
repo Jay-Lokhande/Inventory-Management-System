@@ -89,3 +89,17 @@ function hideEditForm() {
     const editContainer = document.getElementById('edit-container');
     editContainer.innerHTML = ''; // Clear the content
 }
+
+
+    function deleteItem(tableName, itemId) {
+        fetch(`/${tableName}/delete/${itemId}`, {
+            method: 'DELETE',
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            // Reload the view after deletion (you might consider updating the view without a full page reload)
+            showView('view_' + tableName);
+        })
+        .catch(error => console.error(`Error deleting ${tableName}:`, error));
+    }
