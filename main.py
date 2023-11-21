@@ -358,6 +358,11 @@ def add_employee():
         print()
         job_id = int(request.form.get('job'))
         job = Job.query.filter_by(id=job_id).first()
+
+        if not job:
+            job = None
+        if not location:
+            location = None
         print(job)
         upload = Employees(
             firstName=request.form.get('fName'),
