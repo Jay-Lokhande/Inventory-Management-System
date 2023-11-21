@@ -323,11 +323,10 @@ def add_user():
             location = None
         if Users.query.filter_by(userName=request.form.get('uName')).first():
             flash("This username already exist!")
-            return redirect(url_for('add_user'))
         elif Users.query.filter_by(email=request.form.get('email')).first():
             flash("You've already signed up with that email, log in instead!")
-            return redirect(url_for('index'))
-        new_user = Users(
+        else:
+            new_user = Users(
             firstName=request.form.get('fName'),
             middleName=request.form.get('mName'),
             lastName=request.form.get('lName'),
@@ -335,10 +334,12 @@ def add_user():
             email=request.form.get('email'),
             password=request.form.get('password'),
             location=location
-        )
-        db.session.add(new_user)
-        db.session.commit()
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            flash("User added successfully!", 'success')
         return redirect(url_for('index'))
+
     return render_template('add_user.html', locations=locations)
 
 
