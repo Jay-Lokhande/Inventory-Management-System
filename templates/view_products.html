@@ -21,6 +21,9 @@
                 <td>{{ product.productPrice }}</td>
                 <td>{{ product.category_id }}</td>
                 <td>{{ product.supplier_id }}</td>
+                                <td><button onclick="showEditForm('edit_product',{{ product.id }})">Edit</button></td>
+               <td><button onclick="deleteItem('products', {{ product.id }})">Delete</button></td>
+
             </tr>
     {% endfor %}
     </tbody>

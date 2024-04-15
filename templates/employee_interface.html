@@ -124,6 +124,11 @@
             {% for user in users_same_location %}
                 {% for order in user.orders %}
                 <li>{{ user.firstName }} - {{ user.email }} - Product Name : {{ order.product.productName }} - Quantity : {{ order.quantity }} - </li>
+                            {% if not order.delivered %}
+                                <button onclick="markAsDelivered({{ order.id }})">Mark as Delivered</button>
+                            {% else %}
+                                Delivered
+                            {% endif %}
                 {% endfor %}
             {% endfor %}
         </ul>

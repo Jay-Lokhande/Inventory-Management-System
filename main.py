@@ -32,16 +32,20 @@ class Users(db.Model):
     loc_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
     location = relationship("Location", back_populates="userlocation")
     orders = relationship('Order', back_populates='customer')
+    # Relationship with orders, and set cascade='all, delete-orphan'
+    orders = relationship('Order', back_populates='customer', cascade='all, delete-orphan')
 
+    def get_orders(self):
+        return Order.query.filter_by(user_id=self.id).all()
 
-class Customer(db.Model):
-    __tablename__ = "customer"
-    id = db.Column(db.Integer, primary_key=True)
-    firstName = db.Column(db.String(50), nullable=False)
-    middleName = db.Column(db.String(50), nullable=False)
-    lastName = db.Column(db.String(50), nullable=False)
-    userName = db.Column(db.String(50), nullable=False)
-    password = db.Column(db.String(50), nullable=False)
+# class Customer(db.Model):
+#     __tablename__ = "customer"
+#     id = db.Column(db.Integer, primary_key=True)
+#     firstName = db.Column(db.String(50), nullable=False)
+#     middleName = db.Column(db.String(50), nullable=False)
+#     lastName = db.Column(db.String(50), nullable=False)
+#     userName = db.Column(db.String(50), nullable=False)
+#     password = db.Column(db.String(50), nullable=False)
 
 
 class Employees(db.Model):
@@ -62,6 +66,16 @@ class Employees(db.Model):
     def get_users_from_same_location(self):
         return Users.query.filter_by(location_id=self.location_id).all()
 
+class Order(db.Model):
+    __tablename__ = "orders"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    order_date = db.Column(db.DateTime, default=datetime.datetime.today().date())
+    customer = relationship('Users', back_populates='orders')
+    product = relationship('Product', back_populates='orders')
+    delivered = db.Column(db.Boolean, default=False)
 
 class Job(db.Model):
     __tablename__ = "jobs"
@@ -104,16 +118,6 @@ class Category(db.Model):
     product = relationship("Product", back_populates="category")
 
 
-class Order(db.Model):
-    __tablename__ = "orders"
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
-    quantity = db.Column(db.Integer, nullable=False)
-    order_date = db.Column(db.DateTime, default=datetime.datetime.today().date())
-    customer = relationship('Users', back_populates='orders')
-    product = relationship('Product', back_populates='orders')
-    delivered = db.Column(db.Boolean, default=False)
 
 
 
@@ -149,7 +153,8 @@ def user_login():
             session['user_id'] = user.id
             return redirect(url_for('home'))
             # flash('Invalid username or password.', 'error')
-    return render_template('login.html')
+    locations = Location.query.all()
+    return render_template('login.html', locations=locations)
 
 
 @app.route('/home-page')
@@ -267,6 +272,7 @@ def user_register():
         uname = request.form.get('registerUsername')
         email = request.form.get('registerEmail')
         password = request.form.get('registerPassword')
+
         if Users.query.filter_by(userName=uname).first():
             flash("This username already exist!")
             return redirect(url_for('user_login'))
@@ -356,17 +362,99 @@ def employee_interface(curr, users_same_location):
 #     return render_template('tasks.html')
 
 
-@app.route('/edit_supplier/<int:supplier_id>')
-def edit_supplier(supplier_id):
-    # Add logic to fetch supplier data by ID and render the edit form
-    return render_template('edit_employee.html', supplier_id=supplier_id)
+@app.route('/edit_employee/<int:employee_id>')
+def edit_employee(employee_id):
+    employee = Employees.query.get(employee_id)
+
+    if employee:
+        jobs = Job.query.all()
+        locations = Location.query.all()
+        return render_template('edit_employee.html', employee=employee, jobs=jobs, locations=locations)
+    else:
+        flash('Employee not found.', 'error')
+        return redirect(url_for('dashboard'))
+@app.route('/edit_product/<int:product_id>')
+def edit_product(product_id):
+    product = Product.query.get(product_id)
+    print(product)
+    if product:
+        suppliers = Supplier.query.all()
+        categories = Category.query.all()
+        return render_template('edit_product.html', product=product, suppliers=suppliers, categories=categories)
+    else:
+        flash('Product not found.', 'error')
+        return redirect(url_for('dashboard'))
+
+from flask import jsonify
+
+from flask import jsonify
+
+@app.route('/update_employee/<int:employee_id>', methods=['POST'])
+def update_employee(employee_id):
+    employee = Employees.query.get(employee_id)
+
+    if employee:
+        # Update the employee fields based on the form data
+        employee.firstName = request.form.get('fName')
+        employee.middleName = request.form.get('mName')
+        employee.lastName = request.form.get('lName')
+        employee.userName = request.form.get('uName')
+        employee.email = request.form.get('email')
+        employee.password = request.form.get('password')
+        # Update other fields as needed
+
+        try:
+            db.session.commit()
+            flash('Employee updated successfully!', 'success')
+            return jsonify({'status': 'success'})
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating employee: {str(e)}', 'error')
+            return jsonify({'status': 'error', 'message': str(e)})
+    else:
+        flash('Employee not found.', 'error')
+        return jsonify({'status': 'error', 'message': 'Employee not found'})
 
 
-# @app.route('/delete_supplier/<int:supplier_id>')
-# def delete_supplier(supplier_id):
-#     Add logic to delete the supplier by ID (use caution with actual deletion)
-#     For demonstration purposes, redirecting back to the view_supplier page
-# return redirect(url_for('view_supplier'))
+@app.route('/update_product/<int:product_id>', methods=['POST'])
+def update_product(product_id):
+    product = Product.query.get(product_id)
+    print(product)
+    if product:
+        # Update the employee fields based on the form data
+
+        supplier_id = int(request.form.get('supplier'))
+        category_id = int(request.form.get('category'))
+        supplier = Supplier.query.filter_by(id=supplier_id).first()
+        category = Category.query.filter_by(id=category_id).first()
+
+        # file = request.files['file']
+        # upload = Product(
+        #     category=category,
+        #     supplier=supplier
+        # )
+        print(request.form.get('productName'))
+        product.productName = request.form.get('productName')
+        product.productPrice = request.form.get('price')
+        product.productDiscription = request.form.get('discription')
+        product.productImg = product.productImg
+        product.quantity = request.form.get('quantity')
+        product.supplier = supplier
+        product.category = category
+        # db.session.commit()
+
+        try:
+            db.session.commit()
+            flash('Product updated successfully!', 'success')
+            return jsonify({'status': 'success'})
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating employee: {str(e)}', 'error')
+            return jsonify({'status': 'error', 'message': str(e)})
+    else:
+        flash('Employee not found.', 'error')
+        return jsonify({'status': 'error', 'message': 'Employee not found'})
+
 
 @app.route('/dashboard')
 def index():
@@ -523,6 +611,30 @@ def delete_item(table_name, item_id):
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
+    elif table_name == 'customers':
+        item = Order.query.get(item_id)
+        if not item:
+            return jsonify({'error': f'{table_name.capitalize()} not found'}), 404
+
+        try:
+            db.session.delete(item)
+            db.session.commit()
+            return jsonify({'message': f'{table_name.capitalize()} deleted successfully'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+    elif table_name == 'categories':
+        item = Category.query.get(item_id)
+        if not item:
+            return jsonify({'error': f'{table_name.capitalize()} not found'}), 404
+
+        try:
+            db.session.delete(item)
+            db.session.commit()
+            return jsonify({'message': f'{table_name.capitalize()} deleted successfully'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
 
     return jsonify({'error': 'Table name not recognized'}), 400
 
@@ -550,6 +662,20 @@ def add_location():
         db.session.commit()
         return redirect(url_for('index'))
     return render_template('add_location.html')
+
+from flask import jsonify
+
+@app.route('/mark_as_delivered/<int:order_id>', methods=['POST'])
+def mark_as_delivered(order_id):
+    order = Order.query.get(order_id)
+
+    if order:
+        order.delivered = True
+        db.session.commit()
+        return jsonify({'success': True}), 200
+    else:
+        return jsonify({'success': False, 'error': 'Order not found'}), 404
+
 
 
 @app.route('/view')
@@ -580,8 +706,8 @@ def view_category():
 
 @app.route('/view_customers')
 def view_customers():
-    customers = Customer.query.all()
-    # Add logic to fetch and display supplier data
+    customers = Order.query.all()
+    # Add logic to fetch and display supplier dat
     return render_template('view_customers.html', customers=customers)
 
 

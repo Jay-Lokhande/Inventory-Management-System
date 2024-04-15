@@ -35,3 +35,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 });
+
+// empscript.js
+// empscript.js
+
+function markAsDelivered(orderId) {
+    // Send an AJAX request to update the delivery status
+    fetch(`/mark_as_delivered/${orderId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // If the update is successful, update the UI or perform any necessary actions
+            alert('Order marked as delivered successfully.');
+            // You may want to update the UI here, for example, change the button to 'Delivered'
+            // or remove the button.
+        } else {
+            alert('Failed to mark order as delivered.');
+        }
+    })
+    .catch(error => console.error('Error marking order as delivered:', error));
+}
+

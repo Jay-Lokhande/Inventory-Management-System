@@ -75,15 +75,16 @@ function showView(viewName) {
 // ... (previous script content) ...
 
 
-function showEditForm(supplierId) {
+function showEditForm(formName, itemId) {
     const editContainer = document.getElementById('edit-container');
-    fetch(`/edit_supplier/${supplierId}`)
+    fetch(`/${formName}/${itemId}`)
         .then(response => response.text())
         .then(html => {
             editContainer.innerHTML = html;
         })
-        .catch(error => console.error('Error fetching edit form:', error));
+        .catch(error => console.error(`Error fetching edit form for ${formName}:`, error));
 }
+
 
 function hideEditForm() {
     const editContainer = document.getElementById('edit-container');
@@ -103,3 +104,27 @@ function hideEditForm() {
         })
         .catch(error => console.error(`Error deleting ${tableName}:`, error));
     }
+ function updateEntity(event, entityId, entityName) {
+    event.preventDefault();  // Prevent the default form submission
+
+    // Collect form data
+    const formData = new FormData(event.target);
+
+    // Send an AJAX request
+    fetch(`/update_${entityName}/${entityId}`, {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Handle the response data (if needed)
+        console.log(data);
+
+        // After updating, fetch and update the corresponding section
+//        showView(`view_${entityName}`);
+    })
+    .catch(error => {
+        // Handle errors
+        console.error(`Error updating ${entityName}:`, error);
+    });
+}

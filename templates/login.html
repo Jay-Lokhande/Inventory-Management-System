@@ -135,7 +135,15 @@
   <div class="content" id="registerContent" style="display: none;">
     <!-- Registration Form -->
     <form action="{{ url_for('user_register') }}" method="post">
+      <div class="form-group">
+  <select name="location" id="location">
+                          <option value="-1">Select Location</option>
 
+    {% for location in locations %}
+      <option value='{{location.id}}'>{{location.city}}</option>
+    {% endfor %}
+  </select>
+      </div>
             <div class="form-group">
         <label for="firstName">First Name:</label>
         <input type="text" id="firstName" name="firstName" required>
